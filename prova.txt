@@ -1,2 +1,3 @@
-això és un arxiu de text
+això és un arxiu i modifiquem per segona vegada el text
+
 
