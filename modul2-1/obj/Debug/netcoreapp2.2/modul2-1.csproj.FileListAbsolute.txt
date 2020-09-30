@@ -1,0 +1,11 @@
+/Users/cristian/Documents/cursos/git-exercici/modul2-1/bin/Debug/netcoreapp2.2/modul2-1.deps.json
+/Users/cristian/Documents/cursos/git-exercici/modul2-1/bin/Debug/netcoreapp2.2/modul2-1.runtimeconfig.json
+/Users/cristian/Documents/cursos/git-exercici/modul2-1/bin/Debug/netcoreapp2.2/modul2-1.runtimeconfig.dev.json
+/Users/cristian/Documents/cursos/git-exercici/modul2-1/bin/Debug/netcoreapp2.2/modul2-1.dll
+/Users/cristian/Documents/cursos/git-exercici/modul2-1/bin/Debug/netcoreapp2.2/modul2-1.pdb
+/Users/cristian/Documents/cursos/git-exercici/modul2-1/obj/Debug/netcoreapp2.2/modul2-1.csprojAssemblyReference.cache
+/Users/cristian/Documents/cursos/git-exercici/modul2-1/obj/Debug/netcoreapp2.2/modul2-1.csproj.CoreCompileInputs.cache
+/Users/cristian/Documents/cursos/git-exercici/modul2-1/obj/Debug/netcoreapp2.2/modul2-1.AssemblyInfoInputs.cache
+/Users/cristian/Documents/cursos/git-exercici/modul2-1/obj/Debug/netcoreapp2.2/modul2-1.AssemblyInfo.cs
+/Users/cristian/Documents/cursos/git-exercici/modul2-1/obj/Debug/netcoreapp2.2/modul2-1.dll
+/Users/cristian/Documents/cursos/git-exercici/modul2-1/obj/Debug/netcoreapp2.2/modul2-1.pdb
