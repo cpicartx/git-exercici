@@ -69,9 +69,9 @@ namespace modul2_4
                     case "del":
                         EsborraUsuari();
                         break;
-                    case "edit":
-                        EditaUsuari();
-                        break;
+                    //case "edit":
+                        //EditaUsuari();
+                        //break;
                     case "m":
                         tecla = false;
                         break;
@@ -127,7 +127,7 @@ namespace modul2_4
             Console.WriteLine("---- Menu d'usuaris ----");
 
             Console.WriteLine("Per afegir un nou usuari escriu: add");
-            Console.WriteLine("Per a editar un usuari escriu: edit");
+            //Console.WriteLine("Per a editar un usuari escriu: edit");
             Console.WriteLine("Per a esborrar un usuari escriu: del");
             Console.WriteLine("Per veure tots els usuaris escriure: all");
             Console.WriteLine("Per a tornar al menú principal escriu: m");
@@ -138,7 +138,7 @@ namespace modul2_4
 
             Console.WriteLine("Per loggejar-te escriu: log");
             Console.WriteLine("Per afegir un video escriu: add");
-            Console.WriteLine("Per editar un video escriu: edit");
+            //Console.WriteLine("Per editar un video escriu: edit");
             Console.WriteLine("Per esborrar un video escriu: del");
             Console.WriteLine("Per veure tots els videos escriu: all");
             Console.WriteLine("Per a tornar al menú principal escriu: m");
