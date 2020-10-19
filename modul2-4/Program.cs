@@ -1,399 +1,914 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using modul2_4.Lib.Models;
-
 
 // Exercici mòdul 2-4 sobre usuaris que tenen videos
 // Author: Cristian Picart
-// Date: 6/10/2020
+// Date: 15/10/2020
+
 
 namespace modul2_4
 {
+    /// <summary>
+    /// Gestió d'usuaris i dels videos que té un usuari, i gestió de la llista
+    /// de tags que té cada video
+    /// </summary>
     class Program
     {
-        static Dictionary<string, Usuari> Usuaris = new Dictionary<string, Usuari>();
-        static Dictionary<string, Video> Videos = new Dictionary<string, Video>();
 
-        static string logger = null;
+        public static Dictionary<CrudOptionsTypes, string> CrudOptionsNames = new Dictionary<CrudOptionsTypes, string>
+        {
+            { CrudOptionsTypes.Add, "add" },
+            { CrudOptionsTypes.Edit, "edit" },
+            { CrudOptionsTypes.DeleteOrView, "delete" }
+        };
+
+        public static Dictionary<Guid, User> Users = new Dictionary<Guid, User>();
+        public static Dictionary<Guid, Video> Videos = new Dictionary<Guid, Video>();
+        public static Dictionary<Guid, Tag> Tags = new Dictionary<Guid, Tag>();
+
+
 
         static void Main(string[] args)
         {
-            try
+            LoadInitialData();
+
+            Console.WriteLine("Benvingut al programa para gestió de videos");
+            Console.WriteLine("-------------------------------------------");
+            Console.WriteLine("Per anar a la gestió de usuaris opció --> u");
+            Console.WriteLine("Per anar a la gestió de videos opció --> v");
+            Console.WriteLine("Per anar a la gestió de tags opció --> t");
+            Console.WriteLine("Per sortir del programa --> q");
+
+            var keepdoing = true;
+
+            while (keepdoing)
             {
+                var option = Console.ReadKey().KeyChar;
 
-                MenuPrincipal();
-                var tecla = true;
-
-                while (tecla)
+                if (option == 'u')
                 {
-                    var opcio = Console.ReadKey().KeyChar;
-
-                    if (opcio == 'a')
-                    {
-                        MenuUsuaris();
-                    }
-                    else if (opcio == 'b')
-                    {
-                        MenuVideos();
-                    }
-                    else if (opcio == 's')
-                    {
-                        System.Environment.Exit(-1);
-                    }
+                    ShowUsersMenu();
                 }
-            }catch (Exception e)
+                else if (option == 'v')
                 {
-                Console.WriteLine("*** Error d'exepció: " + e) ;
+                    ShowVideosMenu();
                 }
+                else if (option == 't')
+                {
+                    ShowTagsMenu();
+                }
+                else if (option == 'q')
+                {
+                    System.Environment.Exit(0);
+                }
+
+            }
+
 
         }
 
-        static void MenuUsuaris()
+        private static void ShowMainMenu()
+        {
+            Console.WriteLine("Tornar al menú principal");
+            Console.WriteLine("------------------------");
+            Console.WriteLine("Per anar a la gestió de usuaris opció --> u");
+            Console.WriteLine("Per anar a la gestió de videos opció --> v");
+            Console.WriteLine("Per anar a la gestió de tags opció --> t");
+            Console.WriteLine("Per sortir del programa --> q");
+        }
+
+        #region User Menu
+
+
+        static void ShowUsersMenu()
         {
             Console.WriteLine();
-            MenuUsuarisOpcions();
+            ShowUsersMenuOptions();
 
-            var tecla = true;
-            while (tecla)
+            var keepdoing = true;
+            while (keepdoing)
             {
-                var text = Console.ReadLine();
+                var optionText = Console.ReadLine();
+                string username = GetUsernameForOption(ref optionText);
 
-                switch (text)
+                switch (optionText)
                 {
                     case "all":
-                        LlistaUsuaris();
+                        ShowAllUsers();
                         break;
+
                     case "add":
-                        AfegirUsuari();
+                        AddNewUser();
                         break;
-                    case "del":
-                        EsborraUsuari();
+
+                    case "edit":
+                        EditUser(username);
                         break;
-                    //case "edit":
-                        //EditaUsuari();
-                        //break;
+
+                    case "delete":
+                        DeleteUser(username);
+                        break;
+
                     case "m":
-                        tecla = false;
+                        keepdoing = false;
                         break;
+
                     default:
-                        Console.WriteLine("ERROR: tecla no reconeguda ***");
+                        Console.WriteLine("Opció incorrecte, escriu una altra o 'm' per tornar al menú principal");
                         break;
                 }
             }
 
-
-            MenuPrincipal();
+            ShowMainMenu();
         }
 
-        static void MenuVideos()
+        private static void ShowUsersMenuOptions()
         {
-            Console.WriteLine();
-            MenuVideosOpcions();
+            Console.WriteLine("--Menu d'usuaris--");
 
-            var tecla = true;
-            while (tecla)
+            Console.WriteLine("Per veure tots els usuaris escriu --> all");
+            Console.WriteLine("Per afegir un nou usuari escriu --> add");
+            Console.WriteLine("Per editar un usuari escriu --> edit + el username");
+            Console.WriteLine("Per esborrar un usuari escriu --> delete + el username");
+            Console.WriteLine("Per tornar al menú principal escriu --> m");
+        }
+
+        static string GetCrudOptionForUsername(CrudOptionsTypes option, string input, out string textOption)
+        {
+            textOption = string.Empty;
+
+            var optionName = CrudOptionsNames[option];
+
+            if (string.IsNullOrEmpty(input))
+                return null;
+
+            if (input.StartsWith(optionName))
             {
-                var text = Console.ReadLine();
+                char[] c1 = { ' ' };
+                var spaso = input.Split(c1);
 
-                switch (text)
+                if (spaso.Length > 2)
+                    Console.WriteLine("warning: there more parameters than needed after username");
+                else if (spaso.Length > 1)
                 {
-                    case "all":
-                        LlistaVideos();
-                        break;
-                    case "log":
-                        Loggejar();
-                        break;
-                    case "add":
-                        AfegirVideo();
-                        break;
-                    case "del":
-                        EsborraVideo();
-                        break;
-                    case "m":
-                        tecla = false;
-                        break;
-                    default:
-                        Console.WriteLine("ERROR: tecla no reconeguda ***");
-                        break;
+                    var text = spaso[1];
+                    var currentUsername = User.IsUsernameValid(text) ? text : string.Empty;
+                    while (true)
+                    {
+                        if (!string.IsNullOrEmpty(currentUsername))
+                        {
+                            textOption = optionName;
+                            return currentUsername;
+                        }
+
+                        Console.WriteLine($"El username {spaso[1]} no existeix o té un format incorrecte, torna a escriure o 'sortir' per sortir");
+                        text = Console.ReadLine();
+                        if (text == "sortir")
+                        {
+                            ShowUsersMenuOptions();
+                            return null;
+                        }
+
+                        currentUsername = User.IsUsernameValid(text) ? text : string.Empty;
+                    }
                 }
             }
-
-
-            MenuPrincipal();
+            return null;
         }
 
-        private static void MenuUsuarisOpcions()
+        private static string GetUsernameForOption(ref string text)
         {
-            Console.WriteLine("---- Menu d'usuaris ----");
+            var prev = text;
+            var username = GetCrudOptionForUsername(CrudOptionsTypes.Edit, text, out text);
 
-            Console.WriteLine("Per afegir un nou usuari escriu: add");
-            //Console.WriteLine("Per a editar un usuari escriu: edit");
-            Console.WriteLine("Per a esborrar un usuari escriu: del");
-            Console.WriteLine("Per veure tots els usuaris escriure: all");
-            Console.WriteLine("Per a tornar al menú principal escriu: m");
-        }
-        private static void MenuVideosOpcions()
-        {
-            Console.WriteLine("---- Menu de videos ----");
+            if (string.IsNullOrEmpty(username))
+                username = GetCrudOptionForUsername(CrudOptionsTypes.DeleteOrView, text, out text);
 
-            Console.WriteLine("Per loggejar-te escriu: log");
-            Console.WriteLine("Per afegir un video escriu: add");
-            //Console.WriteLine("Per editar un video escriu: edit");
-            Console.WriteLine("Per esborrar un video escriu: del");
-            Console.WriteLine("Per veure tots els videos escriu: all");
-            Console.WriteLine("Per a tornar al menú principal escriu: m");
+            if (string.IsNullOrEmpty(text))
+                text = prev;
+
+            return username;
         }
 
-        private static void MenuPrincipal()
+        static string GetUsernameFromInput(CrudOptionsTypes option, string currentUsername = "")
         {
-            Console.WriteLine("Benvingut al programa per a la gestió de videos");
-            Console.WriteLine("-----------------------------------------------");
-            Console.WriteLine("Gestió d'usuaris opció ---> a");
-            Console.WriteLine("Gestió de videos opció ---> b");
-            Console.WriteLine("Sortir ---> s");
-        }
+            Console.WriteLine("Introdueix el username o 'sortir' per sortir");
+            var text = Console.ReadLine();
+            var optionName = CrudOptionsNames[option];
 
-        static void LlistaUsuaris()
-        {
-            Console.WriteLine("--- Llista d'usuaris ---");
-            foreach (var usuari in Usuaris.Values)
+            while (true)
             {
+                if (text == "sortir")
+                    return null;
 
-                Console.WriteLine($"{usuari.user} {usuari.nom} {usuari.cognom} {usuari.password} {usuari.data_registre}");
-            }
-        }
-        static void EsborraUsuari()
-        {
-            Console.WriteLine("--- Esborrar usuari ----------");
-            Console.WriteLine("Posa nom d'usuari");
-            var tecla = true;
-            while (tecla)
-            {
-                var user = Console.ReadLine();
-
-                if (Usuaris.ContainsKey(user))
+                if (!User.ValidateUsernameFormat(text))
                 {
-                    Usuaris.Remove(user);
-                    Console.WriteLine($"AVÍS: L'usuari {user} s'ha esborrat ***");
+                    Console.WriteLine(User.UsernameFormatError);
+                    Console.WriteLine("Introdueix el username o 'sortir' per sortir");
                 }
-                else if (string.IsNullOrEmpty(user) || user.Length < 6)
+                else if (!User.ValidateUsernameDuplicated(text, currentUsername)
+                        && (optionName != CrudOptionsNames[CrudOptionsTypes.DeleteOrView]))
                 {
-                    Console.WriteLine("ERROR: Usuari amb format incorrecte ***");
-                }
-                else if (!Usuaris.ContainsKey(user))
-                {
-                    Console.WriteLine("AVÍS: Usuari no existeix ***");
-                }
-                tecla = false;
-            }
-            MenuUsuarisOpcions();
-        }
-
-        static void EditaUsuari()
-        {
-
-        }
-        static void AfegirUsuari()
-        {
-            Console.WriteLine("--- Afegir usuari -------");
-            Console.WriteLine("Posa nom d'usuari");
-
-            var tecla = true;
-            while (tecla)
-            {
-                var user = Console.ReadLine();
-
-                if (string.IsNullOrEmpty(user) || user.Length < 6)
-                {
-                    Console.WriteLine("ERROR: L'usuari amb format incorrecte ***");
-                }
-                else if (Usuaris.ContainsKey(user))
-                {
-                    Console.WriteLine($"AVÍS: Ja existeix un usuari amb el user {user} ***");
+                    Console.WriteLine($"{User.ValidateUsernameDuplicated(text, currentUsername)} {text}");
+                    Console.WriteLine("Introdueix el username o 'sortir' per sortir");
                 }
                 else
                 {
-                    while (true)
-                    {
-                        Console.WriteLine("--- Dades complementàries -----");
-                        Console.WriteLine("Escriu el nom de pila");
-                        var name = Console.ReadLine();
-                        Console.WriteLine("Escriu els cognoms");
-                        var cognoms = Console.ReadLine();
-                        Console.WriteLine("Escriu el password");
-                        var clau = Console.ReadLine();
-
-                        try
-                        {
-                            if (string.IsNullOrEmpty(name))
-                            {
-                                Console.WriteLine("ERROR: El nom està buit ***");
-                            }
-                            else
-                            {
-                          
-                            var usuari = new Usuari
-                            {
-                                user = user,
-                                nom = name,
-                                cognom = cognoms,
-                                password = clau,
-                                data_registre = DateTime.Now,
-                            };
-                            Usuaris.Add(usuari.user, usuari);
-                            tecla = false;
-                            break;
-                           
-                            }   
-                        }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine("ERROR: Error afegint usuari: " + e);
-                            break;
-                        }
-                    }
+                    return text;
                 }
+
+                text = Console.ReadLine();
             }
 
-            MenuUsuarisOpcions();
         }
 
-        static void AfegirVideo()
+        static string GetNameFromInput()
         {
-            var tecla = true;
-            if (logger == null) 
+            Console.WriteLine("Introdueix el nom o 'sortir' per sortir");
+            while (true)
             {
-                Console.WriteLine("AVÍS: Has de loggejar-te abans ***");
-                tecla = false; 
-            }
+                var input = Console.ReadLine();
+                if (input == "sortir")
+                    return null;
 
-            while (tecla)
-            {
-                Console.WriteLine("--- Afegir video -----");
-                Console.WriteLine("Posa titol del video, i 's' per acabar:");
-                var titol = Console.ReadLine();
-
-                if (titol == "s")
+                if (!User.ValidateNameFormat(input))
                 {
-                    break;
+                    Console.WriteLine(User.NameFormatError);
+                    Console.WriteLine("Introdueix el nom o 'sortir' per sortir");
                 }
-                else if (string.IsNullOrEmpty(titol))
-                {
-                    Console.WriteLine("ERROR: Títol està en blanc");
-                }
-
                 else
                 {
+                    return input;
+                }
+            }
+        }
+        static string GetSurnameFromInput()
+        {
+            Console.WriteLine("Introdueix el cognom o 'sortir' per sortir");
+            while (true)
+            {
+                var input = Console.ReadLine();
+                if (input == "sortir")
+                    return null;
+
+                if (!User.ValidateNameFormat(input))
+                {
+                    Console.WriteLine(User.NameFormatError);
+                    Console.WriteLine("Introdueix el cognom o 'sortir' per sortir");
+                }
+                else
+                {
+                    return input;
+                }
+            }
+        }
+        static string GetPasswordFromInput()
+        {
+            Console.WriteLine("Introdueix el password o 'sortir' per sortir");
+            while (true)
+            {
+                var input = Console.ReadLine();
+                if (input == "sortir")
+                    return null;
+
+                if (!User.ValidateNameFormat(input))
+                {
+                    Console.WriteLine(User.NameFormatError);
+                    Console.WriteLine("Introdueix el password o 'sortir' per sortir");
+                }
+                else
+                {
+                    return input;
+                }
+            }
+        }
+
+        #endregion
+
+
+
+        #region Videos Menu
+
+        static void ShowVideosMenu()
+        {
+            Console.WriteLine();
+            ShowVideosMenuOptions(); 
+
+            var keepdoing = true;
+            while (keepdoing)
+            {
+                var optionText = Console.ReadLine();
+                string videoName = GetVideoNameForOption(ref optionText);
+
+                switch (optionText)
+                {
+                    case "all":
+                        ShowAllVideos();
+                        break;
+
+                    case "add":
+                        AddNewVideo();
+                        break;
+
+                    case "edit":
+                        EditVideo(videoName);
+                        break;
+
+                    case "delete":
+                        DeleteVideo(videoName);
+                        break;
+
+                    case "m":
+                        keepdoing = false;
+                        break;
+
+                    default:
+                        Console.WriteLine("Opció incorrecte, escriu una altra o 'm' per tornar al menú principal");
+                        break;
+                }
+            }
+
+            ShowMainMenu();
+        }
+
+
+        private static void ShowVideosMenuOptions()
+        {
+            Console.WriteLine("--Menu de videos--");
+
+            Console.WriteLine("Per veure tots els videos escriu --> all");
+            Console.WriteLine("Per veure un nuevo video escriu --> add");
+            Console.WriteLine("Per editar un video escriu --> edit + el videoName");
+            Console.WriteLine("Per esborrar un video escriu --> delete + el videoName");
+            Console.WriteLine("Per tornar al menú principal escriu --> m");
+        }
+
+        static string GetCrudOptionForVideoName(CrudOptionsTypes option, string input, out string textOption)
+        {
+            textOption = string.Empty;
+
+            var optionName = CrudOptionsNames[option];
+
+            if (string.IsNullOrEmpty(input))
+                return null;
+
+            if (input.StartsWith(optionName))
+            {
+                char[] c1 = { ' ' };
+                var spaso = input.Split(c1);
+
+                if (spaso.Length > 2)
+                    Console.WriteLine("warning: there more parameters than needed after subject name");
+                else if (spaso.Length > 1)
+                {
+                    var text = spaso[1];
+                    var currentVideoName = Video.IsVideoNameValid(text) ? text : string.Empty;
                     while (true)
                     {
-                        Console.WriteLine("--- Dades complementàries -----");
-                        Console.WriteLine("Escriu la url");
-                        var ruta = Console.ReadLine();
-                        if (string.IsNullOrEmpty(ruta))
+                        if (!string.IsNullOrEmpty(currentVideoName))
                         {
-                            Console.WriteLine("ERROR: La url està buida");
-                            break;
+                            textOption = optionName;
+                            return currentVideoName;
                         }
 
-                        Console.WriteLine("Escriu un tag ('s' per acabar)");
-                        List<string> tags = new List<string>();
-                        string texte = "";
-
-                        while (texte != "s")
+                        Console.WriteLine($"El video {spaso[1]} no existeix o té un format incorrecte, torna a escriure-la o 'sortir' per sortir");
+                        text = Console.ReadLine();
+                        if (text == "sortir")
                         {
-                            texte = Console.ReadLine();
-                            if (texte != "s")
-                            {
-                                tags.Add(texte);
-                            }
+                            ShowUsersMenuOptions();
+                            return null;
                         }
 
-                        try
-                        {
-                            var video = new Video
-                            {
-                                propietari = logger,
-                                ruta = ruta,
-                                titol = titol,
-                                tags = tags,
-                            };
-                            Videos.Add(titol, video);
-                            tecla = false;
-                            break;
-
-                        }catch (Exception e)
-                        {
-                            Console.WriteLine("ERROR: Error afegint video: " + e);
-                            break;
-                        }
+                        currentVideoName = Video.IsVideoNameValid(text) ? text : string.Empty;
                     }
                 }
             }
-
-            MenuVideosOpcions();
+            return null;
         }
 
-        static void LlistaVideos()
+        static string GetVideoNameForOption(ref string text)
         {
-            Console.WriteLine($"--- Llista de videos de l'usuari {logger} ---");
-            foreach (var video in Videos.Values)
+            var prev = text;
+            var name = GetCrudOptionForVideoName(CrudOptionsTypes.Edit, text, out text);
+
+            if (string.IsNullOrEmpty(name))
             {
-                if (video.propietari == logger)
+                text = prev;
+                name = GetCrudOptionForVideoName(CrudOptionsTypes.DeleteOrView, text, out text);
+            }
+
+            if (string.IsNullOrEmpty(text))
+                text = prev;
+
+            return name;
+        }
+
+        static string GetVideoNameFromInput(CrudOptionsTypes option, string currentName = "")
+        {
+            Console.WriteLine("Introdueix el nom del video o 'sortir' per sortir");
+            var text = Console.ReadLine();
+            var optionName = CrudOptionsNames[option];
+
+            while (true)
+            {
+                if (text == "sortir")
+                    return null;
+
+                if (!Video.ValidateNameFormat(text))
                 {
-                    Console.WriteLine($"{video.titol} {video.ruta}");
-                    video.tags.ForEach(delegate (String tags)
+                    Console.WriteLine(Video.NameFormatError);
+                    Console.WriteLine("Introdueix el nom del video o 'sortir' per sortir");
+                }
+                else if (!Video.ValidateVideoNameDuplicated(text, currentName)
+                        && (optionName != CrudOptionsNames[CrudOptionsTypes.DeleteOrView]))
+                {
+                    Console.WriteLine($"{Video.ValidateVideoNameDuplicated(text,currentName)} {text}");
+                    Console.WriteLine("Introdueix el nom del video o 'sortir' per sortir");
+                }
+                else
+                {
+                    return text;
+                }
+
+                text = Console.ReadLine();
+            }
+
+        }
+
+        #endregion
+
+        #region Tags Menu
+
+        static void ShowTagsMenu()
+        {
+            Console.WriteLine();
+            ShowTagsMenuOptions();
+            char[] c1 = { ' ' };
+
+            var keepdoing = true;
+            while (keepdoing)
+            {
+                var optionText = Console.ReadLine();
+                var extraOption = string.Empty;
+
+                /*if (optionText.Contains("allby"))
+                {
+                    var spaso = optionText.Split(c1);
+                    if (spaso.Length > 0)
                     {
-                        Console.WriteLine($"Tag: {tags}");
-                    });
+                        optionText = spaso[0];
+                        if (spaso.Length > 1)
+                            extraOption = spaso[1];
+                    }
+                }*/
 
+
+                switch (optionText)
+                {
+                    case "all":
+                        ShowAllTags();
+                        break;
+
+                    case "allbyuser":
+                        ShowAllTagsByUsername();
+                        break;
+
+                    case "allbyvideo":
+                        ShowAllTagsByVideo();
+                        break;
+
+                    case "add":
+                        AddNewTag();
+                        break;
+
+                    case "m":
+                        keepdoing = false;
+                        break;
+
+                    default:
+                        Console.WriteLine("Opció incorrecte, escriu una altra o 'm' per anar al menú principal");
+                        break;
                 }
             }
+
+            ShowMainMenu();
         }
-        static void EsborraVideo()
+
+
+        private static void ShowTagsMenuOptions()
         {
-            Console.WriteLine("--- Esborrar video ----------");
-            Console.WriteLine("Posa titol del video");
+            Console.WriteLine("--Menu de tags--");
+
+            Console.WriteLine("Per veure tots els tags escriu --> all");
+            Console.WriteLine("Per veure tots els tags x usuari escriu --> allbyuser");
+            Console.WriteLine("Per veure tots els tags x video escriu --> allbyvideo");
+            Console.WriteLine("Per afegir un tag escriu --> add");
+            Console.WriteLine("Per tornar al menú principal escriu --> m");
+        }
 
 
-            var titol_video = Console.ReadLine();
+        static string GetTagFromInput()
+        {
+            Console.WriteLine("Introdueix el tag o 'sortir' per sortir");
+            while (true)
+            {
+                var input = Console.ReadLine();
+
+                if (input == "sortir")
+                    return null;
+
+                ///////////////////////
+
+
+                if (!Tag.ValidateTextTagFormat(input))
+                {
+                    Console.WriteLine(Tag.TextFormatError);
+                    Console.WriteLine("Introdueix el nom del tag o 'sortir' per sortir");
+                }
+                else if (!Tag.ValidateTextTagDuplicated(input))
+                {
+                    Console.WriteLine($"{Tag.ValidateTextTagDuplicated(input)} {input}");
+                    Console.WriteLine("Introdueix el nom del tag o 'sortir' per sortir");
+                }
+                else
+                {
+                    return input;
+                }
+
+                input = Console.ReadLine();
+
+                //Console.WriteLine("Introdueix el nom o 'sortir' per anular");
+
+            }
+        }
+
+
+        #endregion
+
+        #region User CRUD
+
+        static void ShowAllUsers()
+        {
+            foreach (var user in Users.Values)
+            {
+                Console.WriteLine($"{user.UserName} {user.Name} {user.Surname} {user.Password} {user.TimeStamp}");
+            }
+        }
+
+        static void AddNewUser()
+        {
+            #region Todos los inputs del modelo van a pasar por aquí
+            var validatedUsername = GetUsernameFromInput(CrudOptionsTypes.Add);
+            if (string.IsNullOrEmpty(validatedUsername))
+                return;
+
+            var validatedName = GetNameFromInput();
+            if (string.IsNullOrEmpty(validatedName))
+                return;
+
+            var validatedSurname = GetSurnameFromInput();
+            if (string.IsNullOrEmpty(validatedSurname))
+                return;
+
+            var validatedPassword= GetPasswordFromInput();
+            #endregion
+            if (string.IsNullOrEmpty(validatedPassword))
+                return;
+
+
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                UserName = validatedUsername,
+                Name = validatedName,
+                Surname = validatedSurname,
+                Password = validatedPassword,
+                TimeStamp = DateTime.Now
+            };
+            Users.Add(user.Id, user);
+
+            Console.WriteLine($"User with username:{validatedUsername} and name: {validatedName} successfully added.");
+
+            ShowUsersMenuOptions();
+
+        }
+
+        private static void EditUser(string username)
+        {
+            #region Todos los inputs del modelo van a pasar por aquí
+            var validatedUsername = GetUsernameFromInput(CrudOptionsTypes.Edit, username);
+            if (string.IsNullOrEmpty(validatedUsername))
+                return;
+
+            var validatedName = GetNameFromInput();
+            if (string.IsNullOrEmpty(validatedName))
+                return;
+            #endregion
+
+            // forma a manijen
+            User existingUser = null;
+            foreach(var item in Users)
+            {
+                // item es un par clave-valor key-value donde value es un objeto de tipo User
+                if (item.Value.UserName == username)
+                {
+                    existingUser.UserName = validatedUsername;
+                    existingUser.Name = validatedName;
+                }
+            }
+
+
+        }
+
+        private static void DeleteUser(string username)
+        {
+            var validatedUsername = string.IsNullOrEmpty(username) ? GetUsernameFromInput(CrudOptionsTypes.Edit, username) : username;
+            if (string.IsNullOrEmpty(validatedUsername))
+                return;
+
+            // LINQ
+            var existingStudent = Users.Values.FirstOrDefault(x => x.UserName == username);
+            if (existingStudent != null)
+            {
+                Users.Remove(existingStudent.Id);
+                Console.WriteLine("User sucessfully deleted!");
+            }
+            else
+            {
+                Console.WriteLine($"User with username {username} not found");
+            }
+        }
+
+        #endregion
+
+        #region Video CRUD
+
+        static void ShowAllVideos()
+        {
             foreach (var video in Videos.Values)
             {
-                if ((video.propietari == logger) && (Videos.ContainsKey(titol_video)))
-                {
-                    Videos.Remove(titol_video);
-                    Console.WriteLine($"AVÍS: El video {titol_video} s'ha esborrat ***");
-                }
+                Console.WriteLine($"{video.Title} {video.UrlVideo}");
             }
-
-            MenuVideosOpcions();
         }
 
-        static void Loggejar()
+        static void AddNewVideo()
         {
-            logger = "";
-            Console.WriteLine("Posa nom d'usuari");
+            #region Todos los inputs del modelo van a pasar por aquí
 
-            var tecla = true;
-            while (tecla)
+            var validatedUsername = GetUsernameFromInput(CrudOptionsTypes.DeleteOrView);
+            if (string.IsNullOrEmpty(validatedUsername))
+                return;
+
+            var validatedName = GetVideoNameFromInput(CrudOptionsTypes.Add);
+            if (string.IsNullOrEmpty(validatedName))
+                return;
+
+            var validatedUrl = GetVideoNameFromInput(CrudOptionsTypes.Add);
+            if (string.IsNullOrEmpty(validatedUrl))
+                return;
+            #endregion
+
+
+            var video = new Video
             {
-                var user = Console.ReadLine();
+                Id = Guid.NewGuid(),
+                UserName = validatedUsername,
+                Title = validatedName,
+                UrlVideo = validatedUrl
+            };
 
-                if (Usuaris.ContainsKey(user))
-                {
-                    Console.WriteLine($"AVÍS: Estàs loggejat com a {user} ***");
-                    logger = user;
-                }
-                else if (string.IsNullOrEmpty(user) || user.Length < 6)
-                {
-                    Console.WriteLine("ERROR: Usuari amb format incorrecte ***");
-                }
-                else if (!Usuaris.ContainsKey(user))
-                {
-                    Console.WriteLine("AVÍS: Usuari no existeix ***");
-                }
-                tecla = false;
-            }
-            MenuVideosOpcions();
+            Videos.Add(video.Id, video);
+
+            Console.WriteLine($"Video {validatedName} successfully added.");
+            ShowVideosMenuOptions();
         }
+
+        private static void EditVideo(string name)
+        {
+            #region Todos los inputs del modelo van a pasar por aquí
+
+            var validatedName = GetVideoNameFromInput(CrudOptionsTypes.Edit, name);
+            if (string.IsNullOrEmpty(validatedName))
+                return;
+
+            #endregion
+
+
+            // Usando LINQ
+            var existingVideo = Videos.Values.FirstOrDefault(x => x.Title == name);
+            if (existingVideo != null)
+            {
+                existingVideo.Title = validatedName;
+                Console.WriteLine("Video updated ok!");
+            }
+            else
+            {
+
+                Console.WriteLine($"Video with name {validatedName} not found");
+            }
+        }
+
+        private static void DeleteVideo(string name)
+        {
+            var validatedName = string.IsNullOrEmpty(name) ? GetVideoNameFromInput(CrudOptionsTypes.Edit, name) : name;
+            if (string.IsNullOrEmpty(validatedName))
+                return;
+
+            // Usando LINQ
+            var existingItem = Videos.Values.FirstOrDefault(x => x.Title == name);
+            if (existingItem != null)
+            {
+                Videos.Remove(existingItem.Id);
+                Console.WriteLine("Video sucessfully delete!");
+            }
+            else
+            {
+
+                Console.WriteLine($"Video with name {name} not found");
+            }
+        }
+
+        #endregion
+
+        #region Tags CRUD
+
+        static void ShowAllTags()
+        {
+            foreach (var tag in Tags.Values)
+            {
+                Console.WriteLine($"video: {tag.Title} usuari: {tag.UserName} tag: {tag.TextTag}");
+            }
+        }
+
+        static void ShowAllTagsByUsername()
+        {
+            var validatedUsername = GetUsernameFromInput(CrudOptionsTypes.DeleteOrView);
+            if (string.IsNullOrEmpty(validatedUsername))
+                return;
+            foreach (var tag in Tags.Values)
+            {
+                if (tag.UserName == validatedUsername)
+                    Console.WriteLine($"video: {tag.Title} usuari: {tag.UserName} tag: {tag.TextTag}");
+            }
+        }
+
+        static void ShowAllTagsByVideo()
+        {
+            var validatedVideoName = GetVideoNameFromInput(CrudOptionsTypes.DeleteOrView);
+            if (string.IsNullOrEmpty(validatedVideoName))
+                return;
+            foreach (var tag in Tags.Values)
+            {
+                if (tag.Title == validatedVideoName)
+                    Console.WriteLine($"video: {tag.Title} usuari: {tag.UserName} tag: {tag.TextTag}");
+            }
+        }
+
+        static void AddNewTag()
+        {
+            #region Todos los inputs del modelo van a pasar por aquí
+            var validatedUsername = GetUsernameFromInput(CrudOptionsTypes.DeleteOrView);
+            if (string.IsNullOrEmpty(validatedUsername))
+                return;
+
+            var validatedVideoName = GetVideoNameFromInput(CrudOptionsTypes.DeleteOrView);
+            if (string.IsNullOrEmpty(validatedVideoName))
+                return;
+
+            var validatedTextTag = GetTagFromInput();
+            if (validatedTextTag == null)
+                return;
+
+            #endregion
+
+            var currentUser = Users.Values.FirstOrDefault(x => x.UserName == validatedUsername);
+
+            if (currentUser == null)
+            {
+                Console.WriteLine($"No s'ha trobat cap usuari amb el username {validatedUsername}");
+                ShowTagsMenuOptions();
+                return;
+
+            }
+
+            var currentVideo = Videos.Values.FirstOrDefault(x => x.Title == validatedVideoName);
+            if (currentVideo == null)
+            {
+                Console.WriteLine($"No s'ha trobat cap video amb el nom {validatedVideoName}");
+                ShowTagsMenuOptions();
+                return;
+
+            }
+
+            var tag = new Tag
+            {
+                Id = Guid.NewGuid(),
+                //Video.User.UserName = currentUser,
+                Video = currentVideo,
+                TextTag = validatedTextTag
+
+            };
+            Tags.Add(tag.Id, tag);
+
+
+
+            Console.WriteLine($"Tag for user with username:{validatedUsername} and video: {validatedVideoName} successfully added with grade:{validatedTextTag}.");
+
+            ShowTagsMenuOptions();
+
+        }
+
+        #endregion
+
+ 
+
+        public static void LoadInitialData()
+        {
+            var pepe = new User
+            {
+                Id = Guid.NewGuid(),
+                UserName = "12345678a",
+                Name = "pepe",
+                Surname = "gotera",
+                Password = "pepo_pass",
+                TimeStamp = DateTime.Now
+            };
+            var lolo = new User
+            {
+                Id = Guid.NewGuid(),
+                UserName = "11111111a",
+                Name = "lolo",
+                Surname = "lelo",
+                Password = "lelo_pass",
+                TimeStamp = DateTime.Now
+            };
+
+            Users.Add(pepe.Id, pepe);
+            Users.Add(lolo.Id, lolo);
+
+            var video1 = new Video
+            {
+                Id = Guid.NewGuid(),
+                UserName = "lolo",
+                UrlVideo = "http://video1",
+                Title = "Video de curso de C#"
+            };
+
+            var video2 = new Video
+            {
+                Id = Guid.NewGuid(),
+                UserName = "pepe",
+                UrlVideo = "http://video2",
+                Title = "Programación"
+            };
+
+            Videos.Add(video1.Id, video1);
+            Videos.Add(video2.Id, video2);
+
+            var tag1_lolo = new Tag()
+            {
+                Id = Guid.NewGuid(),
+                UserName = "lolo",
+                Title = "Video de curso de C#",
+                TextTag = "tag1_lolo"
+            };
+            var tag2_lolo = new Tag()
+            {
+                Id = Guid.NewGuid(),
+                UserName = "lolo",
+                Title = "Video de curso de C#",
+                TextTag = "tag2_lolo"
+            };
+
+            var tag1_pepe = new Tag()
+            {
+                Id = Guid.NewGuid(),
+                UserName = "pepe",
+                Title = "Programación",
+                TextTag = "tag1_pepe"
+            };
+            var tag2_pepe = new Tag()
+            {
+                Id = Guid.NewGuid(),
+                UserName = "pepe",
+                Title = "Programación",
+                TextTag = "tag2_pepe"
+            };
+
+
+            Tags.Add(tag1_pepe.Id, tag1_pepe);
+            Tags.Add(tag2_pepe.Id, tag2_pepe);
+            Tags.Add(tag1_lolo.Id, tag1_lolo);
+            Tags.Add(tag2_lolo.Id, tag2_lolo);
+        }
+    }
+
+    public enum CrudOptionsTypes
+    {
+        Add,
+        Edit,
+        DeleteOrView
     }
 }
