@@ -806,7 +806,7 @@ namespace modul2_4
             {
                 Id = Guid.NewGuid(),
                 //Video.User.UserName = currentUser,
-                Video = currentVideo,
+                //Video = currentVideo,
                 TextTag = validatedTextTag
 
             };

@@ -51,7 +51,7 @@ namespace modul2_4.Lib.Models
 
         public bool AddTag(Tag tag)
         {
-            tag.Video = this;
+            //tag.Video = this;
             Tags.Add(tag);
 
             return true;

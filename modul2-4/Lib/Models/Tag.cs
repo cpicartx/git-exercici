@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace modul2_4.Lib.Models
 {
-    class Tag : Video
+    class Tag
     {
         #region Static Validations
 
@@ -29,8 +29,8 @@ namespace modul2_4.Lib.Models
 
         #endregion
 
-        //public User User { get; set; }
-        public Video Video { get; set; }
+
+        //public Video Video { get; set; }
         public string TextTag { get; set; }
 
         public Tag()
